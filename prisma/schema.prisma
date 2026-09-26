@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  logs      Log[]
+}
+
+model Script {
+  id        String   @id @default(cuid())
+  scriptId  String   @unique
+  name      String
+  code      String   @db.Text
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  keys      Key[]
+}
+
+model Key {
+  id          String   @id @default(cuid())
+  key         String   @unique @default(cuid())
+  scriptId    String
+  script      Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  hwid        String?
+  banned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  lastUsed    DateTime?
+  downloads   Download[]
+}
+
+model Download {
+  id        String   @id @default(cuid())
+  keyId     String
+  key       Key      @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  hwid      String
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Log {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     Admin     @relation(fields: [adminId], references: [id])
+  action    LogAction
+  detail    String?
+  createdAt DateTime  @default(now())
+}
+
+enum Role {
+  OWNER
+  ADMIN
+}
+
+enum LogAction {
+  CREATE_SCRIPT
+  UPDATE_SCRIPT
+  DELETE_SCRIPT
+  CREATE_KEY
+  DELETE_KEY
+  BAN_KEY
+  CREATE_ACCESS
+  DELETE_ACCESS
+  AI_HELP
+}
